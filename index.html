@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이정현 — Architecture &amp; Research</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  :root{
+    --ink:#141414;
+    --paper:#ffffff;
+    --line:#e3e3e3;
+    --line-soft:#f0f0f0;
+    --mid:#8a8a8a;
+    --body:#4a4a4a;
+    --hover:#fafafa;
+    --glass:rgba(255,255,255,.92);
+    --cut:#d9381e; /* 절단선 레드 */
+    --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+    --sans:'Noto Sans KR','Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  }
+  /* ---------- BLUEPRINT MODE ---------- */
+  [data-theme="bp"]{
+    --ink:#f2f7fd;
+    --paper:#0a2a4a;
+    --line:#35597e;
+    --line-soft:#163a5e;
+    --mid:#aac9e9;
+    --body:#d6e4f3;
+    --hover:#0f3358;
+    --glass:rgba(10,42,74,.92);
+    --cut:#ff7a50;
+  }
+  /* 다크 배경에선 가는 글씨가 약해 보여 본문 굵기 보정 */
+  [data-theme="bp"] .hero-desc,
+  [data-theme="bp"] .proj p,
+  [data-theme="bp"] .paper .venue,
+  [data-theme="bp"] .about .bio p,
+  [data-theme="bp"] .d-desc p,
+  [data-theme="bp"] .spec li,
+  [data-theme="bp"] .cf-field input,
+  [data-theme="bp"] .cf-field textarea{font-weight:400;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;background:var(--paper);color-scheme:light;}
+  [data-theme="bp"]{color-scheme:dark;}
+  /* 모바일 브라우저가 모드 전환 시 바탕색을 갱신하지 않는 버그 대응 — 직접 지정 */
+  [data-theme="bp"] body,
+  [data-theme="bp"] .detail{background-color:#0a2a4a;}
+  [data-theme="bp"] nav,
+  [data-theme="bp"] .d-top{background-color:rgba(10,42,74,.92);}
+  [data-theme="bp"] .proj-grid,
+  [data-theme="bp"] .titleblock,
+  [data-theme="bp"] .d-meta,
+  [data-theme="bp"] .c-bar,
+  [data-theme="bp"] .c-cap,
+  [data-theme="bp"] .dim .label,
+  [data-theme="bp"] .axis .bubble,
+  [data-theme="bp"] nav ul,
+  [data-theme="bp"] .theme-btn,
+  [data-theme="bp"] .menu-btn,
+  [data-theme="bp"] .f-btn,
+  [data-theme="bp"] .c-arrow,
+  [data-theme="bp"] .cf-send{background-color:#0a2a4a;}
+  /* 모바일 브라우저가 버튼/입력창을 기본(흰색) 스타일로 그리는 것 방지 */
+  button,input,textarea{
+    -webkit-appearance:none;appearance:none;border-radius:0;
+    background-color:transparent;color:inherit;
+  }
+  ::placeholder{color:var(--mid);opacity:1;}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:96px 96px;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    transition:background-color .3s, color .3s;
+  }
+  ::selection{background:var(--ink);color:var(--paper);}
+  a{color:inherit;text-decoration:none;}
+  .mono{font-family:var(--mono);}
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    background:var(--glass);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--ink);
+    display:flex;justify-content:space-between;align-items:center;
+    padding:0 24px;height:52px;
+  }
+  nav .logo{font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:.08em;}
+  nav .logo span{color:var(--cut);}
+  nav ul{display:flex;gap:28px;list-style:none;}
+  nav ul a{
+    font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--mid);
+    transition:color .15s;
+  }
+  nav ul a:hover, nav ul a:focus-visible{color:var(--cut);}
+  nav ul a b{font-weight:500;color:var(--ink);margin-right:6px;transition:color .15s;}
+  nav ul a:hover b{color:var(--cut);}
+  .nav-right{display:flex;align-items:center;gap:14px;}
+  .theme-btn{
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    border:1px solid var(--ink);background:var(--paper);color:var(--ink);
+    padding:6px 12px;cursor:pointer;transition:all .15s;
+  }
+  .theme-btn:hover{background:var(--ink);color:var(--paper);}
+  .menu-btn{
+    display:none;width:36px;height:36px;border:1px solid var(--ink);
+    background:var(--paper);color:var(--ink);cursor:pointer;
+    font-family:var(--mono);font-size:14px;
+  }
+  @media (max-width:760px){
+    nav ul{
+      position:fixed;top:52px;left:0;right:0;display:none;
+      flex-direction:column;gap:0;
+      background:var(--paper);border-bottom:1px solid var(--ink);
+      padding:6px 24px 14px;
+    }
+    nav ul.open{display:flex;}
+    nav ul li{padding:11px 0;border-bottom:1px solid var(--line);}
+    nav ul li:last-child{border-bottom:none;}
+    .menu-btn{display:block;}
+  }
+
+  /* ---------- HERO ---------- */
+  header{
+    position:relative;
+    min-height:92vh;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:120px 8vw 80px;
+    border-bottom:1px solid var(--ink);
+    overflow:hidden;
+  }
+  .axis{position:absolute;font-family:var(--mono);font-size:10px;color:var(--mid);}
+  .axis .bubble{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border:1px solid var(--mid);border-radius:50%;
+    background:var(--paper);position:relative;z-index:1;
+  }
+  .axis-x{top:64px;display:flex;flex-direction:column;align-items:center;}
+  .axis-x::after{content:'';display:block;width:1px;height:78vh;background:repeating-linear-gradient(to bottom,var(--line) 0 6px,transparent 6px 12px);}
+  .axis-y{left:18px;display:flex;align-items:center;}
+  .axis-y::after{content:'';display:block;height:1px;width:84vw;background:repeating-linear-gradient(to right,var(--line) 0 6px,transparent 6px 12px);}
+  @media (max-width:760px){.axis{display:none;}}
+
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--mid);
+    margin-bottom:28px;
+  }
+  .eyebrow em{font-style:normal;color:var(--cut);}
+  h1{
+    font-size:clamp(44px, 8.5vw, 110px);
+    font-weight:700;letter-spacing:-.03em;line-height:1.06;
+    position:relative;display:inline-block;width:fit-content;
+  }
+  h1 .en{display:block;font-weight:300;color:var(--mid);font-size:.42em;letter-spacing:.02em;margin-top:10px;}
+  .dim{position:relative;margin-top:34px;width:min(520px,72vw);height:18px;}
+  .dim .bar{position:absolute;top:9px;left:0;right:0;height:1px;background:var(--cut);}
+  .dim .tick{position:absolute;top:3px;width:1px;height:13px;background:var(--cut);}
+  .dim .tick.l{left:0;transform:rotate(-30deg);}
+  .dim .tick.r{right:0;transform:rotate(-30deg);}
+  .dim .label{
+    position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:10px;color:var(--cut);letter-spacing:.1em;
+    background:var(--paper);padding:0 8px;white-space:nowrap;
+  }
+  .hero-desc{margin-top:30px;max-width:540px;font-size:15px;font-weight:300;color:var(--body);}
+  .hero-desc strong{font-weight:500;color:var(--ink);}
+  .scroll-hint{
+    position:absolute;bottom:28px;right:8vw;
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mid);
+  }
+
+  /* ---------- 진입 애니메이션 (도면이 그려지는 시퀀스) ---------- */
+  @keyframes drawY{from{transform:scaleY(0);}to{transform:scaleY(1);}}
+  @keyframes drawX{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+  @keyframes rise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+  @keyframes show{from{opacity:0;}to{opacity:1;}}
+  .axis-x::after{transform-origin:top;animation:drawY 1s var(--d,.15s) cubic-bezier(.4,0,.2,1) both;}
+  .axis-y::after{transform-origin:left;animation:drawX 1s var(--d,.3s) cubic-bezier(.4,0,.2,1) both;}
+  .axis .bubble{animation:show .5s var(--d,.1s) both;}
+  header .eyebrow{animation:rise .6s .3s both;}
+  header h1{animation:rise .7s .5s both;}
+  .dim .bar{transform-origin:left;animation:drawX .7s .95s cubic-bezier(.4,0,.2,1) both;}
+  .dim .tick,.dim .label{animation:show .4s 1.5s both;}
+  .hero-desc{animation:rise .6s 1.2s both;}
+  .scroll-hint{animation:show .6s 1.9s both;}
+
+  /* ---------- SECTION FRAME ---------- */
+  section{border-bottom:1px solid var(--ink);scroll-margin-top:52px;}
+  header#top{scroll-margin-top:52px;}
+  .sec-head{display:flex;align-items:baseline;gap:18px;padding:26px 8vw 0;}
+  .sec-no{font-family:var(--mono);font-size:11px;color:var(--cut);letter-spacing:.1em;}
+  .sec-title{font-size:clamp(24px,3.4vw,38px);font-weight:700;letter-spacing:-.02em;}
+  .sec-sub{font-family:var(--mono);font-size:11px;color:var(--mid);margin-left:auto;letter-spacing:.08em;}
+  .sec-body{padding:36px 8vw 72px;}
+  @media (max-width:760px){.sec-sub{display:none;}}
+
+  /* ---------- FILTERS ---------- */
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:26px;}
+  .f-btn{
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    border:1px solid var(--line);background:var(--paper);color:var(--mid);
+    padding:7px 16px;cursor:pointer;transition:all .15s;
+  }
+  .f-btn:hover{border-color:var(--ink);color:var(--ink);}
+  .f-btn.active{background:var(--ink);border-color:var(--ink);color:var(--paper);}
+
+  /* ---------- PROJECTS ---------- */
+  .proj-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+    border:1px solid var(--ink);background:var(--paper);
+  }
+  .proj{
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+    padding:22px;display:flex;flex-direction:column;gap:14px;
+    transition:background .15s;position:relative;cursor:pointer;
+  }
+  .proj.hide{display:none;}
+  .proj:hover{background:var(--hover);}
+  .proj:hover .thumb{border-color:var(--cut);}
+  .proj:hover .thumb::after{opacity:1;}
+  .thumb{
+    aspect-ratio:4/3;border:1px solid var(--line);position:relative;overflow:hidden;
+    background:repeating-linear-gradient(45deg,transparent 0 7px,var(--line-soft) 7px 8px);
+    transition:border-color .15s;
+  }
+  .thumb img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    filter:grayscale(1);transition:filter .35s ease;
+  }
+  .proj:hover .thumb img{filter:grayscale(0);}
+  .thumb::after{
+    content:'IMAGE — 도면/사진 교체';
+    position:absolute;inset:auto 8px 8px auto;
+    font-family:var(--mono);font-size:9px;color:var(--cut);
+    opacity:0;transition:opacity .15s;
+  }
+  .proj .meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--mid);letter-spacing:.06em;}
+  .proj h3{font-size:16px;font-weight:500;letter-spacing:-.01em;}
+  .proj p{font-size:13px;font-weight:300;color:var(--body);line-height:1.65;}
+  .tag{
+    display:inline-block;font-family:var(--mono);font-size:9px;
+    border:1px solid var(--line);padding:2px 8px;color:var(--mid);
+    margin-right:6px;letter-spacing:.06em;
+  }
+  .proj .view{
+    font-family:var(--mono);font-size:10px;color:var(--cut);letter-spacing:.1em;
+    opacity:0;transition:opacity .15s;margin-top:auto;
+  }
+  .proj:hover .view{opacity:1;}
+
+  /* ---------- RESEARCH ---------- */
+  .paper{
+    display:grid;grid-template-columns:110px 1fr auto;gap:24px;align-items:baseline;
+    padding:24px 0;border-bottom:1px solid var(--line);
+    cursor:pointer;transition:background .15s;
+  }
+  .paper:first-child{border-top:1px solid var(--ink);}
+  .paper:hover{background:var(--hover);}
+  .paper:hover h3{color:var(--cut);}
+  .paper .year{font-family:var(--mono);font-size:12px;color:var(--mid);}
+  .paper h3{font-size:16px;font-weight:500;line-height:1.55;letter-spacing:-.01em;transition:color .15s;}
+  .paper .venue{font-size:13px;font-weight:300;color:var(--body);margin-top:6px;}
+  .status{
+    font-family:var(--mono);font-size:9px;letter-spacing:.08em;
+    border:1px solid var(--ink);padding:3px 10px;white-space:nowrap;
+  }
+  .status.red{border-color:var(--cut);color:var(--cut);}
+  @media (max-width:760px){.paper{grid-template-columns:1fr;gap:8px;}}
+
+  /* ---------- ABOUT ---------- */
+  .about{display:grid;grid-template-columns:1.2fr 1fr;gap:64px;}
+  .about .bio p{font-size:15px;font-weight:300;color:var(--body);margin-bottom:18px;}
+  .about .bio strong{font-weight:500;color:var(--ink);}
+  .spec h4{
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--cut);
+    margin:26px 0 10px;font-weight:500;
+  }
+  .spec h4:first-child{margin-top:0;}
+  .spec ul{list-style:none;}
+  .spec li{
+    font-size:13px;font-weight:300;padding:7px 0;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:16px;
+  }
+  .spec li span{font-family:var(--mono);font-size:10px;color:var(--mid);white-space:nowrap;}
+  @media (max-width:760px){.about{grid-template-columns:1fr;gap:40px;}}
+
+  /* ---------- CONTACT ---------- */
+  .contact-wrap p.lead{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--mid);margin-bottom:18px;}
+  .email{
+    font-size:clamp(26px,5vw,56px);font-weight:700;letter-spacing:-.02em;
+    border-bottom:3px solid var(--ink);padding-bottom:6px;
+    transition:color .15s,border-color .15s;display:inline-block;
+  }
+  .email:hover{color:var(--cut);border-color:var(--cut);}
+  .links{margin-top:36px;display:flex;gap:24px;flex-wrap:wrap;}
+  .links a{
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--mid);
+    border:1px solid var(--line);padding:8px 18px;transition:all .15s;
+  }
+  .links a:hover{border-color:var(--ink);color:var(--ink);}
+  .cform{margin-top:52px;max-width:540px;border-top:1px solid var(--ink);padding-top:30px;}
+  .cform .cf-title{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--cut);margin-bottom:24px;}
+  .cf-field{margin-bottom:24px;}
+  .cf-field label{
+    display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;
+    color:var(--mid);margin-bottom:6px;
+  }
+  .cf-field input,.cf-field textarea{
+    width:100%;background:transparent;border:none;border-bottom:1px solid var(--line);
+    padding:8px 0;font-family:var(--sans);font-size:14px;font-weight:300;color:var(--ink);
+    outline:none;resize:vertical;border-radius:0;
+  }
+  .cf-field input:focus,.cf-field textarea:focus{border-bottom-color:var(--cut);}
+  .cf-send{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    border:1px solid var(--ink);background:var(--paper);color:var(--ink);
+    padding:12px 28px;cursor:pointer;transition:all .15s;
+  }
+  .cf-send:hover{background:var(--ink);color:var(--paper);}
+  .cf-note{font-family:var(--mono);font-size:9px;color:var(--mid);margin-top:12px;letter-spacing:.06em;}
+
+  /* ---------- TITLE BLOCK (표제란) ---------- */
+  footer{padding:48px 8vw 64px;}
+  .titleblock{
+    border:1.5px solid var(--ink);
+    display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;
+    font-family:var(--mono);background:var(--paper);
+  }
+  .tb-cell{border-right:1px solid var(--ink);padding:10px 14px;}
+  .tb-cell:last-child{border-right:none;}
+  .tb-cell .k{display:block;font-size:8px;letter-spacing:.14em;color:var(--mid);margin-bottom:4px;}
+  .tb-cell .v{font-size:12px;font-weight:500;letter-spacing:.04em;}
+  .tb-cell .v.red{color:var(--cut);}
+  @media (max-width:760px){
+    .titleblock{grid-template-columns:1fr 1fr;}
+    .tb-cell{border-bottom:1px solid var(--ink);}
+  }
+
+  /* ---------- DETAIL (도면 시트) ---------- */
+  .detail{
+    position:fixed;inset:0;z-index:200;display:none;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:96px 96px;
+    overflow-y:auto;
+  }
+  .detail.open{display:block;}
+  body.locked{overflow:hidden;}
+  .d-top{
+    position:sticky;top:0;z-index:10;height:52px;
+    background:var(--glass);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--ink);
+    display:flex;justify-content:space-between;align-items:center;padding:0 24px;
+  }
+  .back-btn{
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+    background:none;border:none;cursor:pointer;color:var(--ink);padding:8px 0;
+  }
+  .back-btn:hover{color:var(--cut);}
+  .d-sheet{font-family:var(--mono);font-size:11px;color:var(--cut);letter-spacing:.1em;}
+  .d-wrap{max-width:1080px;margin:0 auto;padding:56px 8vw 96px;}
+  .d-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--mid);margin-bottom:16px;}
+  .d-title{font-size:clamp(30px,5vw,56px);font-weight:700;letter-spacing:-.025em;line-height:1.15;}
+  .d-meta{
+    border:1px solid var(--ink);display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    margin:32px 0 28px;font-family:var(--mono);background:var(--paper);
+  }
+  .d-meta div{border-right:1px solid var(--line);padding:10px 14px;}
+  .d-meta div:last-child{border-right:none;}
+  .d-meta .k{display:block;font-size:8px;letter-spacing:.14em;color:var(--mid);margin-bottom:4px;}
+  .d-meta .v{font-size:12px;font-weight:500;}
+  .d-tags{margin-bottom:36px;}
+
+  /* ---------- CAROUSEL ---------- */
+  .carousel{margin-bottom:40px;}
+  .c-frame{
+    aspect-ratio:16/9;border:1px solid var(--ink);position:relative;overflow:hidden;
+    background:repeating-linear-gradient(45deg,transparent 0 7px,var(--line-soft) 7px 8px);
+  }
+  .c-frame img{width:100%;height:100%;object-fit:cover;display:block;}
+  .c-slide-label{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:13px;color:var(--mid);letter-spacing:.14em;
+  }
+  .c-frame .fade{animation:cfade .35s ease;}
+  @keyframes cfade{from{opacity:0;}to{opacity:1;}}
+  .c-cap{
+    position:absolute;left:10px;bottom:8px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);padding:3px 10px;
+  }
+  .c-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    border:1px solid var(--ink);border-top:none;padding:8px 14px;background:var(--paper);
+  }
+  .c-counter{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--mid);}
+  .c-counter b{color:var(--cut);font-weight:500;}
+  .c-btns{display:flex;gap:8px;}
+  .c-arrow{
+    width:34px;height:34px;border:1px solid var(--ink);background:var(--paper);
+    font-family:var(--mono);font-size:14px;cursor:pointer;color:var(--ink);
+    transition:all .15s;
+  }
+  .c-arrow:hover,.c-arrow:focus-visible{background:var(--ink);color:var(--paper);}
+  @media (max-width:760px){.c-arrow{width:42px;height:42px;}}
+
+  .d-desc{max-width:640px;}
+  .d-desc p{font-size:15px;font-weight:300;color:var(--body);margin-bottom:18px;}
+  .d-next{
+    border-top:1px solid var(--ink);padding-top:24px;margin-top:44px;
+    display:flex;justify-content:space-between;align-items:baseline;cursor:pointer;gap:16px;flex-wrap:wrap;
+  }
+  .d-next:hover .d-next-title{color:var(--cut);}
+  .d-next .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mid);}
+  .d-next-title{font-size:20px;font-weight:500;transition:color .15s;}
+
+  /* ---------- 커스텀 커서 (CAD 십자선) — 마우스 기기에서만 ---------- */
+  @media (hover:hover) and (pointer:fine){
+    body{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><g stroke='%23141414' stroke-width='1.5'><path d='M12 1v7M12 16v7M1 12h7M16 12h7'/></g><circle cx='12' cy='12' r='1.2' fill='%23141414'/></svg>") 12 12, auto;}
+    a,button,.proj,.paper,.d-next,[role="button"]{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><g stroke='%23d9381e' stroke-width='1.5'><path d='M12 1v7M12 16v7M1 12h7M16 12h7'/><circle cx='12' cy='12' r='5.5' fill='none'/></g><circle cx='12' cy='12' r='1.2' fill='%23d9381e'/></svg>") 12 12, pointer;}
+    [data-theme="bp"] body{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><g stroke='%23f2f7fd' stroke-width='1.5'><path d='M12 1v7M12 16v7M1 12h7M16 12h7'/></g><circle cx='12' cy='12' r='1.2' fill='%23f2f7fd'/></svg>") 12 12, auto;}
+    [data-theme="bp"] a,
+    [data-theme="bp"] button,
+    [data-theme="bp"] .proj,
+    [data-theme="bp"] .paper,
+    [data-theme="bp"] .d-next,
+    [data-theme="bp"] [role="button"]{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><g stroke='%23ff7a50' stroke-width='1.5'><path d='M12 1v7M12 16v7M1 12h7M16 12h7'/><circle cx='12' cy='12' r='5.5' fill='none'/></g><circle cx='12' cy='12' r='1.2' fill='%23ff7a50'/></svg>") 12 12, pointer;}
+    input,textarea{cursor:text;}
+  }
+
+  /* ---------- REVEAL ---------- */
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease;}
+  .reveal.in{opacity:1;transform:none;}
+
+  /* ---------- REDUCED MOTION ---------- */
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    .reveal{opacity:1;transform:none;transition:none;}
+    .axis-x::after,.axis-y::after,.axis .bubble,
+    header .eyebrow,header h1,.dim .bar,.dim .tick,.dim .label,
+    .hero-desc,.scroll-hint,.c-frame .fade{animation:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#top">JH<span>—</span>LEE</a>
+  <div class="nav-right">
+    <ul id="nav-ul">
+      <li><a href="#projects"><b>A-01</b>PROJECTS</a></li>
+      <li><a href="#research"><b>A-02</b>RESEARCH</a></li>
+      <li><a href="#about"><b>A-03</b>PROFILE</a></li>
+      <li><a href="#contact"><b>A-04</b>CONTACT</a></li>
+    </ul>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="블루프린트 모드 전환">◐ BLUEPRINT</button>
+    <button class="menu-btn" id="menu-btn" aria-label="메뉴 열기">≡</button>
+  </div>
+</nav>
+
+<header id="top">
+  <div class="axis axis-x" style="left:30%;--d:.15s"><span class="bubble">X1</span></div>
+  <div class="axis axis-x" style="left:58%;--d:.3s"><span class="bubble">X2</span></div>
+  <div class="axis axis-x" style="left:86%;--d:.45s"><span class="bubble">X3</span></div>
+  <div class="axis axis-y" style="top:38%;--d:.35s"><span class="bubble">Y1</span></div>
+  <div class="axis axis-y" style="top:72%;--d:.5s"><span class="bubble">Y2</span></div>
+
+  <p class="eyebrow">PORTFOLIO <em>/</em> ARCHITECTURE · RESEARCH · CONSULTING</p>
+  <h1>
+    이정현
+    <span class="en">Junghyun Lee — Architectural Designer &amp; Researcher</span>
+  </h1>
+  <div class="dim" aria-hidden="true">
+    <span class="label">SEOUL, KR — EST. PORTFOLIO 2026</span>
+    <span class="bar"></span><span class="tick l"></span><span class="tick r"></span>
+  </div>
+  <p class="hero-desc">
+    건축설계와 연구를 오가며 <strong>교육공간</strong>과 <strong>건물일체형 태양광(BIPV)</strong>을
+    다룹니다. 공간을 그리는 일과 공간을 분석하는 일이 같은 작업이라고 생각합니다.
+  </p>
+  <span class="scroll-hint">SCROLL ↓</span>
+</header>
+
+<section id="projects">
+  <div class="sec-head reveal">
+    <span class="sec-no">A-01</span>
+    <h2 class="sec-title">Projects</h2>
+    <span class="sec-sub">SELECTED WORKS — SCALE N.T.S</span>
+  </div>
+  <div class="sec-body">
+    <div class="filters reveal" id="filters">
+      <button class="f-btn active" data-f="all">ALL</button>
+      <button class="f-btn" data-f="교육공간">교육공간</button>
+      <button class="f-btn" data-f="컨설팅">컨설팅</button>
+      <button class="f-btn" data-f="설계">설계</button>
+    </div>
+    <div class="proj-grid reveal">
+      <article class="proj" data-id="p-001" data-cat="교육공간 컨설팅" tabindex="0" role="button" aria-label="태릉고 프로젝트 상세 보기">
+        <div class="thumb"></div>
+        <div class="meta"><span>P-001</span><span>2026</span></div>
+        <h3>태릉고등학교 AI 특화교실 리디자인</h3>
+        <p>AI 교육과정 운영을 위한 교실 공간 재구성. 가변형 좌석 배치와 실습·강의 겸용 레이아웃 계획.</p>
+        <div><span class="tag">교육공간</span><span class="tag">리모델링</span><span class="tag">컨설팅</span></div>
+        <span class="view">VIEW SHEET →</span>
+      </article>
+      <article class="proj" data-id="p-002" data-cat="교육공간" tabindex="0" role="button" aria-label="돈암초 프로젝트 상세 보기">
+        <div class="thumb"></div>
+        <div class="meta"><span>P-002</span><span>2025–26</span></div>
+        <h3>돈암초등학교 AI 교실 구축</h3>
+        <p>초등 AI 교육 환경 조성 프로젝트. 기자재 계획과 공간 설계를 통합한 구축 컨설팅.</p>
+        <div><span class="tag">교육공간</span><span class="tag">신규구축</span></div>
+        <span class="view">VIEW SHEET →</span>
+      </article>
+      <article class="proj" data-id="p-003" data-cat="컨설팅" tabindex="0" role="button" aria-label="AI 중점학교 컨설팅 상세 보기">
+        <div class="thumb"></div>
+        <div class="meta"><span>P-003</span><span>2025</span></div>
+        <h3>AI 중점학교 공간 컨설팅</h3>
+        <p>반포고·언남고·상암고 등 다수 학교 대상 공간 진단 및 설계지표 비교 분석.</p>
+        <div><span class="tag">컨설팅</span><span class="tag">공간분석</span></div>
+        <span class="view">VIEW SHEET →</span>
+      </article>
+      <article class="proj" data-id="p-004" data-cat="설계" tabindex="0" role="button" aria-label="프로젝트 상세 보기">
+        <div class="thumb"></div>
+        <div class="meta"><span>P-004</span><span>YEAR</span></div>
+        <h3>프로젝트 제목 — 교체</h3>
+        <p>설계 스튜디오 작품, 공모전 출품작 등 추가할 프로젝트 설명을 입력하세요.</p>
+        <div><span class="tag">설계</span><span class="tag">EDIT ME</span></div>
+        <span class="view">VIEW SHEET →</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="research">
+  <div class="sec-head reveal">
+    <span class="sec-no">A-02</span>
+    <h2 class="sec-title">Research</h2>
+    <span class="sec-sub">PUBLICATIONS &amp; WORKING PAPERS</span>
+  </div>
+  <div class="sec-body reveal">
+    <article class="paper" data-id="r-001" tabindex="0" role="button" aria-label="BIPV 논문 상세 보기">
+      <span class="year">2026</span>
+      <div>
+        <h3>입면형 BIPV의 설치비용 및 경제성 분석 — 외장재 대체 효과를 중심으로</h3>
+        <p class="venue">한국태양에너지학회 논문집</p>
+      </div>
+      <span class="status red">UNDER REVIEW</span>
+    </article>
+    <article class="paper" data-id="r-002" tabindex="0" role="button" aria-label="AI 교육거점시설 논문 상세 보기">
+      <span class="year">2026</span>
+      <div>
+        <h3>국내 AI 교육거점시설의 공간·운영 연계 구조 분석과 설계 방향에 관한 연구</h3>
+        <p class="venue">대한건축학회 논문집 (JAIK) — 투고 준비</p>
+      </div>
+      <span class="status">IN PROGRESS</span>
+    </article>
+    <article class="paper" data-id="r-003" tabindex="0" role="button" aria-label="AI 교실 공간 구성 논문 상세 보기">
+      <span class="year">2026</span>
+      <div>
+        <h3>국내 AI 교실의 공간 구성 분석과 교육과정 연계 계획 방향에 관한 연구</h3>
+        <p class="venue">대한건축학회 논문집 (JAIK) — 투고 준비</p>
+      </div>
+      <span class="status">IN PROGRESS</span>
+    </article>
+  </div>
+</section>
+
+<section id="about">
+  <div class="sec-head reveal">
+    <span class="sec-no">A-03</span>
+    <h2 class="sec-title">Profile</h2>
+    <span class="sec-sub">CV — REV.01</span>
+  </div>
+  <div class="sec-body">
+    <div class="about reveal">
+      <div class="bio">
+        <p><strong>홍익대학교 건축학과 석사과정</strong>에 재학 중이며, 연구조교로
+        교육공간 설계 연구와 학교 공간 컨설팅 프로젝트를 수행하고 있습니다.</p>
+        <p>BIPV 경제성 분석부터 AI 교육공간의 질적 연구까지, 정량과 정성을 오가는
+        분석을 설계 언어로 번역하는 데 관심이 있습니다. 국가유산실측설계기술사를
+        준비하며 역사 환경과 건축 보존 영역으로도 시야를 넓히고 있습니다.</p>
+      </div>
+      <div class="spec">
+        <h4>EDUCATION</h4>
+        <ul>
+          <li>홍익대학교 건축학과 석사과정 <span>2025—</span></li>
+          <li>OO대학교 건축학과 학사 <span>EDIT</span></li>
+        </ul>
+        <h4>TOOLS</h4>
+        <ul>
+          <li>Rhino / SketchUp / AutoCAD <span>DESIGN</span></li>
+          <li>Illustrator / Photoshop <span>GRAPHIC</span></li>
+          <li>ATLAS.ti / Excel <span>RESEARCH</span></li>
+        </ul>
+        <h4>FOCUS</h4>
+        <ul>
+          <li>교육공간 설계·컨설팅 <span>SPACE</span></li>
+          <li>BIPV·건물 에너지 <span>ENERGY</span></li>
+          <li>질적 연구 방법론 <span>METHOD</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="sec-head reveal">
+    <span class="sec-no">A-04</span>
+    <h2 class="sec-title">Contact</h2>
+    <span class="sec-sub">OPEN TO OPPORTUNITIES</span>
+  </div>
+  <div class="sec-body contact-wrap reveal">
+    <p class="lead">프로젝트·채용 관련 문의는 메일로 부탁드립니다.</p>
+    <a class="email" href="mailto:hello@example.com">hello@example.com</a>
+    <div class="links">
+      <a href="#" target="_blank" rel="noopener">INSTAGRAM ↗</a>
+      <a href="#" target="_blank" rel="noopener">LINKEDIN ↗</a>
+      <a href="#" target="_blank" rel="noopener">CV (PDF) ↓</a>
+    </div>
+
+    <div class="cform">
+      <p class="cf-title">QUICK MESSAGE — 메일 앱으로 전송됩니다</p>
+      <div class="cf-field">
+        <label for="cf-name">NAME / AFFILIATION</label>
+        <input id="cf-name" type="text" placeholder="이름 또는 소속">
+      </div>
+      <div class="cf-field">
+        <label for="cf-msg">MESSAGE</label>
+        <textarea id="cf-msg" rows="4" placeholder="문의 내용을 입력하세요"></textarea>
+      </div>
+      <button class="cf-send" onclick="sendMail()">SEND →</button>
+      <p class="cf-note">* 버튼을 누르면 사용 중인 메일 앱이 열립니다.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="titleblock reveal" role="contentinfo">
+    <div class="tb-cell"><span class="k">PROJECT</span><span class="v">PORTFOLIO — JUNGHYUN LEE</span></div>
+    <div class="tb-cell"><span class="k">DRAWN BY</span><span class="v">J.H.LEE</span></div>
+    <div class="tb-cell"><span class="k">DATE</span><span class="v">2026.06</span></div>
+    <div class="tb-cell"><span class="k">SCALE</span><span class="v">N.T.S</span></div>
+    <div class="tb-cell"><span class="k">SHEET</span><span class="v red">A-000</span></div>
+  </div>
+</footer>
+
+<div class="detail" id="detail" aria-hidden="true">
+  <div class="d-top">
+    <button class="back-btn" id="back-btn" onclick="history.back()">← BACK</button>
+    <span class="d-sheet" id="d-sheet">P-000</span>
+  </div>
+  <div class="d-wrap" id="d-content"></div>
+</div>
+
+<script>
+  /* ---------- 스크롤 리빌 ---------- */
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  /* ---------- 시트 데이터 (내용 교체는 여기서) ---------- */
+  const SHEETS = {
+    /* ===== PROJECTS ===== */
+    'p-001':{
+      type:'project', no:'P-001',
+      title:'태릉고등학교 AI 특화교실 리디자인', eyebrow:'EDUCATION SPACE — REMODELING',
+      meta:{YEAR:'2026', LOCATION:'서울 노원구', ROLE:'공간계획·컨설팅', STATUS:'설계 진행 중', TYPE:'리모델링'},
+      images:[
+        {cap:'01 — 현황 평면도', src:null},
+        {cap:'02 — 계획 평면도', src:null},
+        {cap:'03 — 공간 다이어그램', src:null},
+        {cap:'04 — 3D 뷰', src:null}
+      ],
+      desc:[
+        'AI 교육과정 운영을 위한 기존 교실의 전면 재구성 프로젝트. 강의형 수업과 팀 기반 실습이 한 공간에서 전환될 수 있도록 가변형 좌석 배치를 계획했다.',
+        '액세스 플로어 설치 여부와 벽체 철거 범위를 중심으로 공사 시나리오를 비교 검토했으며, 방학 중 시공을 전제로 한 단계별 공정 계획을 수립했다.',
+        '※ 이 단락은 샘플 텍스트입니다. 실제 프로젝트 설명으로 교체하세요.'
+      ]
+    },
+    'p-002':{
+      type:'project', no:'P-002',
+      title:'돈암초등학교 AI 교실 구축', eyebrow:'EDUCATION SPACE — NEW BUILD-OUT',
+      meta:{YEAR:'2025–26', LOCATION:'서울 성북구', ROLE:'공간계획·컨설팅', STATUS:'완료', TYPE:'신규 구축'},
+      images:[
+        {cap:'01 — 계획 평면도', src:null},
+        {cap:'02 — 기자재 배치도', src:null},
+        {cap:'03 — 완공 사진', src:null}
+      ],
+      desc:[
+        '초등학생 대상 AI 교육 환경 조성 프로젝트. 기자재 구성과 공간 설계를 통합적으로 검토하여 예산 구조와 공간 계획의 정합성을 확보했다.',
+        '※ 샘플 텍스트 — 실제 내용으로 교체하세요.'
+      ]
+    },
+    'p-003':{
+      type:'project', no:'P-003',
+      title:'AI 중점학교 공간 컨설팅', eyebrow:'CONSULTING — SPATIAL ANALYSIS',
+      meta:{YEAR:'2025', LOCATION:'서울 일대', ROLE:'공간진단·분석', STATUS:'완료', TYPE:'컨설팅'},
+      images:[
+        {cap:'01 — 설계지표 비교', src:null},
+        {cap:'02 — 공간 진단 다이어그램', src:null}
+      ],
+      desc:[
+        '반포고·언남고·상암고 등 AI 중점학교를 대상으로 설계지표 데이터를 비교 분석하고, 학교별 공간 개선 방향을 제안했다.',
+        '※ 샘플 텍스트 — 실제 내용으로 교체하세요.'
+      ]
+    },
+    'p-004':{
+      type:'project', no:'P-004',
+      title:'프로젝트 제목 — 교체', eyebrow:'CATEGORY — EDIT ME',
+      meta:{YEAR:'YEAR', LOCATION:'LOCATION', ROLE:'ROLE', STATUS:'STATUS', TYPE:'TYPE'},
+      images:[
+        {cap:'01 — 이미지 설명', src:null},
+        {cap:'02 — 이미지 설명', src:null}
+      ],
+      desc:['설계 스튜디오 작품이나 공모전 출품작 설명을 입력하세요.']
+    },
+    /* ===== RESEARCH ===== */
+    'r-001':{
+      type:'paper', no:'R-001',
+      title:'입면형 BIPV의 설치비용 및 경제성 분석 — 외장재 대체 효과를 중심으로',
+      eyebrow:'JOURNAL PAPER — 한국태양에너지학회',
+      meta:{YEAR:'2026', VENUE:'한국태양에너지학회', STATUS:'심사 중', METHOD:'경제성 분석'},
+      keywords:['BIPV','경제성 분석','외장재 대체','커튼월','업무시설'],
+      images:[
+        {cap:'FIG.01 — 분석 프레임워크', src:null},
+        {cap:'FIG.02 — 주요 결과 그래프', src:null}
+      ],
+      desc:[
+        '입면형 BIPV의 설치비용을 외장재 대체 효과와 함께 분석하여, 외장 방식에 따른 도입 조건의 차이를 검토한 연구.',
+        '※ 초록 요약을 입력하세요 — 샘플 텍스트입니다.'
+      ]
+    },
+    'r-002':{
+      type:'paper', no:'R-002',
+      title:'국내 AI 교육거점시설의 공간·운영 연계 구조 분석과 설계 방향에 관한 연구',
+      eyebrow:'JOURNAL PAPER — JAIK (투고 준비)',
+      meta:{YEAR:'2026', VENUE:'대한건축학회(JAIK)', STATUS:'투고 준비', METHOD:'질적 연구(RTA)'},
+      keywords:['AI 교육공간','교육거점시설','질적 연구','공간 구성'],
+      images:[
+        {cap:'FIG.01 — 사례 분석 다이어그램', src:null}
+      ],
+      desc:[
+        '국내 AI 교육거점시설 사례를 대상으로 공간 구성과 운영 방식의 연계 구조를 질적으로 분석하고, 설계 방향을 도출한 연구.',
+        '※ 초록 요약을 입력하세요 — 샘플 텍스트입니다.'
+      ]
+    },
+    'r-003':{
+      type:'paper', no:'R-003',
+      title:'국내 AI 교실의 공간 구성 분석과 교육과정 연계 계획 방향에 관한 연구',
+      eyebrow:'JOURNAL PAPER — JAIK (투고 준비)',
+      meta:{YEAR:'2026', VENUE:'대한건축학회(JAIK)', STATUS:'투고 준비', METHOD:'사례 분석'},
+      keywords:['AI 교실','학교 공간','교육과정 연계','공간 계획'],
+      images:[
+        {cap:'FIG.01 — 분석 틀', src:null}
+      ],
+      desc:[
+        'AI 교실의 공간 구성을 교육과정과의 연계 관점에서 분석하고 계획 방향을 제시한 연구.',
+        '※ 초록 요약을 입력하세요 — 샘플 텍스트입니다.'
+      ]
+    }
+  };
+
+  /* ---------- 상세 시트 렌더링 ---------- */
+  const detail = document.getElementById('detail');
+  const dContent = document.getElementById('d-content');
+  const dSheet = document.getElementById('d-sheet');
+  const backBtn = document.getElementById('back-btn');
+  let slides = [], sIdx = 0;
+
+  function render(id){
+    const p = SHEETS[id];
+    const order = Object.keys(SHEETS).filter(k => SHEETS[k].type === p.type);
+    const nextId = order[(order.indexOf(id)+1) % order.length];
+    const next = SHEETS[nextId];
+    slides = p.images || [];
+    sIdx = 0;
+    dSheet.textContent = p.no;
+    backBtn.textContent = p.type === 'paper' ? '← BACK TO A-02 RESEARCH' : '← BACK TO A-01 PROJECTS';
+    const kw = p.keywords
+      ? `<div class="d-tags">${p.keywords.map(k=>`<span class="tag">${k}</span>`).join('')}</div>` : '';
+    dContent.innerHTML = `
+      <p class="d-eyebrow">${p.eyebrow}</p>
+      <h1 class="d-title">${p.title}</h1>
+      <div class="d-meta">
+        ${Object.entries(p.meta).map(([k,v])=>`<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('')}
+      </div>
+      ${kw}
+      <div class="carousel">
+        <div class="c-frame" id="c-frame"></div>
+        <div class="c-bar">
+          <span class="c-counter" id="c-counter"></span>
+          <div class="c-btns">
+            <button class="c-arrow" onclick="slide(-1)" aria-label="이전 이미지">←</button>
+            <button class="c-arrow" onclick="slide(1)" aria-label="다음 이미지">→</button>
+          </div>
+        </div>
+      </div>
+      <div class="d-desc">${p.desc.map(t=>`<p>${t}</p>`).join('')}</div>
+      <div class="d-next" onclick="location.hash='/${nextId}'">
+        <span class="lbl">NEXT SHEET — ${next.no}</span>
+        <span class="d-next-title">${next.title} →</span>
+      </div>`;
+    renderSlide();
+    detail.scrollTop = 0;
+    detail.classList.add('open');
+    detail.setAttribute('aria-hidden','false');
+    document.body.classList.add('locked');
+  }
+
+  function renderSlide(){
+    const frame = document.getElementById('c-frame');
+    const counter = document.getElementById('c-counter');
+    if(!frame || !slides.length) return;
+    const s = slides[sIdx];
+    const pad = n => String(n).padStart(2,'0');
+    frame.innerHTML = s.src
+      ? `<img class="fade" src="${s.src}" alt="${s.cap}"><span class="c-cap">${s.cap}</span>`
+      : `<span class="c-slide-label fade">IMAGE PLACEHOLDER</span><span class="c-cap">${s.cap}</span>`;
+    counter.innerHTML = `<b>${pad(sIdx+1)}</b> / ${pad(slides.length)}`;
+  }
+
+  function slide(d){
+    if(!slides.length) return;
+    sIdx = (sIdx + d + slides.length) % slides.length;
+    renderSlide();
+  }
+
+  function closeDetail(){
+    detail.classList.remove('open');
+    detail.setAttribute('aria-hidden','true');
+    document.body.classList.remove('locked');
+  }
+
+  /* ---------- 해시 라우팅 ---------- */
+  function route(){
+    const m = location.hash.match(/^#\/([pr]-\d{3})$/);
+    if(m && SHEETS[m[1]]) render(m[1]);
+    else closeDetail();
+  }
+  window.addEventListener('hashchange', route);
+  route();
+
+  /* ---------- 카드/논문 클릭 + 키보드 ---------- */
+  document.querySelectorAll('[data-id]').forEach(card=>{
+    const open = ()=>{ location.hash = '/' + card.dataset.id; };
+    card.addEventListener('click', open);
+    card.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } });
+  });
+  document.addEventListener('keydown', e=>{
+    if(!detail.classList.contains('open')) return;
+    if(e.key==='Escape') history.back();
+    if(e.key==='ArrowLeft') slide(-1);
+    if(e.key==='ArrowRight') slide(1);
+  });
+
+  /* ---------- 스와이프 (모바일) ---------- */
+  let touchX = null;
+  document.addEventListener('touchstart', e=>{
+    if(e.target.closest('.c-frame')) touchX = e.touches[0].clientX;
+  },{passive:true});
+  document.addEventListener('touchend', e=>{
+    if(touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if(Math.abs(dx) > 40) slide(dx < 0 ? 1 : -1);
+    touchX = null;
+  },{passive:true});
+
+  /* ---------- 프로젝트 필터 ---------- */
+  document.querySelectorAll('.f-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.f;
+      document.querySelectorAll('.proj[data-cat]').forEach(card=>{
+        card.classList.toggle('hide', f !== 'all' && !card.dataset.cat.includes(f));
+      });
+    });
+  });
+
+  /* ---------- 블루프린트 모드 ---------- */
+  function toggleTheme(){
+    const r = document.documentElement;
+    const isBp = r.getAttribute('data-theme') === 'bp';
+    if(isBp){ r.removeAttribute('data-theme'); }
+    else { r.setAttribute('data-theme','bp'); }
+    /* 일부 모바일 브라우저가 배경색 갱신을 누락하는 문제 대응 */
+    document.body.style.backgroundColor = isBp ? '' : '#0a2a4a';
+    document.getElementById('theme-btn').textContent = isBp ? '◐ BLUEPRINT' : '◑ WHITE';
+  }
+
+  /* ---------- 모바일 메뉴 ---------- */
+  const menuBtn = document.getElementById('menu-btn');
+  const navUl = document.getElementById('nav-ul');
+  menuBtn.addEventListener('click', ()=> navUl.classList.toggle('open'));
+  navUl.querySelectorAll('a').forEach(a=> a.addEventListener('click', ()=> navUl.classList.remove('open')));
+
+  /* ---------- 연락 폼 (메일 앱 연동) ---------- */
+  function sendMail(){
+    const name = document.getElementById('cf-name').value.trim();
+    const msg = document.getElementById('cf-msg').value.trim();
+    const subject = encodeURIComponent('[Portfolio] ' + (name || '문의'));
+    const body = encodeURIComponent(msg + (name ? '\n\n— ' + name : ''));
+    location.href = `mailto:hello@example.com?subject=${subject}&body=${body}`;
+  }
+</script>
+
+</body>
+</html>
